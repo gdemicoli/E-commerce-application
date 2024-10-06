@@ -1,8 +1,11 @@
+<?php
+// Start the session at the top of the file
+session_start();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shopping Cart</title>
     <style>
         .cart-container {
@@ -98,9 +101,16 @@
         <div class="total">$1,499.00</div>
     </div>
 
-    <button class="update-btn" id="update-btn">UPDATE QTY</button>
-    <button class="remove-btn" id="remove-btn">REMOVE</button>
-    <button class="checkout-btn" id="checkout-btn">CHECKOUT NOW</button>
+    <!-- Add a form to submit the grand total -->
+    <form id="checkout-form" action="billing.php" method="post">
+        <!-- Hidden input to store the grand total -->
+        <input type="hidden" name="grandTotal" id="grandTotalInput" value="">
+
+        <button type="button" class="update-btn" id="update-btn">UPDATE QTY</button>
+        <button type="button" class="remove-btn" id="remove-btn">REMOVE</button>
+        <!-- Change the button type to "submit" -->
+        <button type="submit" class="checkout-btn" id="checkout-btn">CHECKOUT NOW</button>
+    </form>
 
     <div class="cart-total">
         <h2>Grand Total: $<span id="grand-total">2,798.00</span></h2>
@@ -112,56 +122,59 @@
     const removeButton = document.getElementById('remove-btn');
     const checkoutButton = document.getElementById('checkout-btn');
     const finalTotal = document.getElementById('grand-total');
+    const grandTotalInput = document.getElementById('grandTotalInput');
 
     function updateTotals() {
         let cartItems = document.querySelectorAll('.cart-item');
         let finalTotalValue = 0;
 
         cartItems.forEach(function(item) {
-            // quantity type
+            // Quantity input
             let qtyInput = item.querySelector('.qty input');
             let quantity = parseInt(qtyInput.value);
 
-            // price
+            // Price
             let priceElement = item.querySelector('.price');
             let priceValue = parseFloat(priceElement.textContent.replace('$','').replace(',',''));
 
-            // calculate item total based on quanitity
+            // Calculate item total
             let itemTotal = priceValue * quantity;
 
-            // update total for item
+            // Update total for item
             let totalElement = item.querySelector('.total');
             totalElement.textContent = '$' + itemTotal.toFixed(2);
 
-            //update final total
+            // Update final total
             finalTotalValue += itemTotal;
         });
 
-        // the total that is displauyed
+        // Update the displayed grand total
         finalTotal.textContent = finalTotalValue.toFixed(2);
+
+        // Set the grand total in the hidden input field
+        grandTotalInput.value = finalTotalValue.toFixed(2);
     }
+
+    // Initialize totals on page load
+    updateTotals();
 
     updateButton.addEventListener('click', function() {
         updateTotals();
     });
 
     removeButton.addEventListener('click', function() {
-        // retrieve cart
+        // Retrieve cart items
         let cartItems = document.querySelectorAll('.cart-item');
         cartItems.forEach(function(item) {
-            // checkbox
+            // Checkbox
             let checkbox = item.querySelector('input[type="checkbox"]');
             if (checkbox.checked) {
-                // remove item
+                // Remove item
                 item.parentNode.removeChild(item);
             }
         });
-        // update the grand total
+        // Update the grand total
         updateTotals();
-    });
-
-    checkoutButton.addEventListener('click', function() {
-        window.location.href = 'billing.html';
     });
 </script>
 
