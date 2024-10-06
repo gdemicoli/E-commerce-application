@@ -1,23 +1,4 @@
-<?php
-// Start the session
-session_start();
 
-// Include configuration file
-include 'config.php';
-
-// Retrieve the grand total from session or POST data
-if (isset($_POST['grandTotal'])) {
-    // Sanitize the input to prevent security issues
-    $grandTotal = filter_var($_POST['grandTotal'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-    $_SESSION['grandTotal'] = $grandTotal;
-} elseif (isset($_SESSION['grandTotal'])) {
-    $grandTotal = $_SESSION['grandTotal'];
-} else {
-    // If grandTotal is not set, redirect back to cart
-    header('Location: cart.php');
-    exit;
-}
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -83,7 +64,7 @@ if (isset($_POST['grandTotal'])) {
             background-color: #333;
         }
         /* Container for Google Pay button */
-        #google-pay-button-container {
+        #container {
             display: none;
             margin-top: 20px;
         }
@@ -93,32 +74,18 @@ if (isset($_POST['grandTotal'])) {
 
 <div class="billing-container">
     <h2>Billing Information</h2>
-    <form id="billing-form" method="post">
-        <!-- We'll dynamically set the form's action and method via JavaScript -->
-
-        <!-- Hidden fields for PayPal -->
-        <input type="hidden" name="business" value="<?php echo PAYPAL_ID; ?>" id="paypal-business">
-        <input type="hidden" name="cmd" value="_xclick" id="paypal-cmd">
-        <input type="hidden" name="item_name" value="Shopping Cart Purchase" id="paypal-item-name">
-        <input type="hidden" name="item_number" value="1" id="paypal-item-number">
-        <input type="hidden" name="amount" value="<?php echo $grandTotal; ?>" id="paypal-amount">
-        <input type="hidden" name="currency_code" value="<?php echo PAYPAL_CURRENCY; ?>" id="paypal-currency-code">
-        <input type="hidden" name="return" value="<?php echo PAYPAL_RETURN_URL; ?>" id="paypal-return">
-        <input type="hidden" name="cancel_return" value="<?php echo PAYPAL_CANCEL_URL; ?>" id="paypal-cancel-return">
-        <input type="hidden" name="notify_url" value="<?php echo PAYPAL_NOTIFY_URL; ?>" id="paypal-notify-url">
-
-        <!-- Buyer Details -->
+    <form id="billing-form" action="confirmation.html" method="post">
         <label for="first-name">First Name *</label>
-        <input type="text" id="first-name" name="first_name" required>
+        <input type="text" id="first-name" name="first-name" required>
 
         <label for="last-name">Last Name *</label>
-        <input type="text" id="last-name" name="last_name" required>
+        <input type="text" id="last-name" name="last-name" required>
 
         <label for="email">Email <span class="optional">(Optional)</span></label>
         <input type="email" id="email" name="email">
 
         <label for="address">Address *</label>
-        <input type="text" id="address" name="address1" required>
+        <input type="text" id="address" name="address" required>
 
         <label for="country">Country *</label>
         <select id="country" name="country" required>
@@ -148,7 +115,7 @@ if (isset($_POST['grandTotal'])) {
         </div>
 
         <!-- Container for Google Pay button -->
-        <div id="google-pay-button-container"></div>
+        <div id="container"></div>
 
         <button type="submit" id="proceed-button">Proceed to Payment</button>
     </form>
@@ -160,31 +127,21 @@ if (isset($_POST['grandTotal'])) {
     onload="onGooglePayLoaded()">
 </script>
 
-<!-- JavaScript Code -->
+<!-- Your existing JavaScript code -->
 <script>
     // Payment method selection handling
     const googlePayOption = document.getElementById('google-pay-option');
     const paypalOption = document.getElementById('paypal-option');
     const proceedButton = document.getElementById('proceed-button');
-    const googlePayButtonContainer = document.getElementById('google-pay-button-container');
-    const billingForm = document.getElementById('billing-form');
+    const googlePayContainer = document.getElementById('container');
 
     function handlePaymentMethodChange() {
         if (googlePayOption.checked) {
             proceedButton.style.display = 'none';
-            googlePayButtonContainer.style.display = 'block';
-            billingForm.setAttribute('action', ''); // No action needed
-            billingForm.setAttribute('method', 'post');
-        } else if (paypalOption.checked) {
-            proceedButton.style.display = 'block';
-            googlePayButtonContainer.style.display = 'none';
-            billingForm.setAttribute('action', '<?php echo PAYPAL_URL; ?>');
-            billingForm.setAttribute('method', 'post');
+            googlePayContainer.style.display = 'block';
         } else {
             proceedButton.style.display = 'block';
-            googlePayButtonContainer.style.display = 'none';
-            billingForm.setAttribute('action', 'confirmation.html');
-            billingForm.setAttribute('method', 'post');
+            googlePayContainer.style.display = 'none';
         }
     }
 
@@ -198,12 +155,10 @@ if (isset($_POST['grandTotal'])) {
     document.addEventListener('DOMContentLoaded', function() {
         handlePaymentMethodChange();
     });
+</script>
 
-    // Google Pay integration code
-    /**
-     * Your Google Pay API integration code goes here
-     * (We'll integrate the code you provided next)
-     */
+<!-- Google Pay integration code -->
+<script>
     /**
      * Define the version of the Google Pay API referenced when creating your
      * configuration
@@ -302,7 +257,7 @@ if (isset($_POST['grandTotal'])) {
             onClick: onGooglePaymentButtonClicked,
             allowedPaymentMethods: [baseCardPaymentMethod]
           });
-      document.getElementById('google-pay-button-container').appendChild(button);
+      document.getElementById('container').appendChild(button);
     }
 
     /**
@@ -323,8 +278,8 @@ if (isset($_POST['grandTotal'])) {
      * Provide Google Pay API with a payment amount, currency, and amount status
      */
     function getGoogleTransactionInfo() {
-      // Retrieve the total price from session storage
-      let totalPrice = '<?php echo $grandTotal; ?>';
+      // Retrieve the total price from localStorage
+      let totalPrice = localStorage.getItem('grandTotal');
       if (!totalPrice) {
           totalPrice = '0.00';
       }
@@ -397,6 +352,7 @@ if (isset($_POST['grandTotal'])) {
       });
     }
 </script>
+
 
 </body>
 </html>

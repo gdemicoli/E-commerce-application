@@ -162,6 +162,13 @@ session_start();
         updateTotals();
     });
 
+    checkoutButton.addEventListener('click', function() {
+    // Assuming finalTotal.textContent contains the total amount
+    localStorage.setItem('grandTotal', finalTotal.textContent);
+    // Proceed to billing page
+    window.location.href = 'billing.html';
+});
+
     removeButton.addEventListener('click', function() {
         // Retrieve cart items
         let cartItems = document.querySelectorAll('.cart-item');
