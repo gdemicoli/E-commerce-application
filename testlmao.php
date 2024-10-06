@@ -23,6 +23,8 @@ if (isset($_POST['grandTotal'])) {
 <head>
     <meta charset="UTF-8">
     <title>Billing Information</title>
+    <!-- Include the Square Web Payments SDK -->
+    <script type="text/javascript" src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
     <style>
         /* Your existing styles */
         body {
@@ -87,6 +89,32 @@ if (isset($_POST['grandTotal'])) {
             display: none;
             margin-top: 20px;
         }
+        /* Square Payment Form Styles */
+        #square-payment-form-container {
+            display: none;
+            margin-top: 20px;
+        }
+        #form-container {
+            margin-bottom: 15px;
+        }
+        .sq-input {
+            display: block;
+            margin-bottom: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .button-credit-card {
+            padding: 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            font-size: 1.1em;
+            cursor: pointer;
+            width: 100%;
+        }
+        .button-credit-card:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -94,10 +122,9 @@ if (isset($_POST['grandTotal'])) {
 <div class="billing-container">
     <h2>Billing Information</h2>
     <form id="billing-form" method="post">
-        <!-- We'll dynamically set the form's action and method via JavaScript -->
-
-        <!-- Hidden fields for PayPal -->
-        <input type="hidden" name="business" value="<?php echo PAYPAL_ID; ?>" id="paypal-business">
+        
+    <!-- Hidden fields for PayPal -->
+    <input type="hidden" name="business" value="<?php echo PAYPAL_ID; ?>" id="paypal-business">
         <input type="hidden" name="cmd" value="_xclick" id="paypal-cmd">
         <input type="hidden" name="item_name" value="Shopping Cart Purchase" id="paypal-item-name">
         <input type="hidden" name="item_number" value="1" id="paypal-item-number">
@@ -135,6 +162,7 @@ if (isset($_POST['grandTotal'])) {
 
         <h3>Select Payment Method *</h3>
         <div class="payment-methods">
+            <!-- Existing payment method options -->
             <label>
                 <input type="radio" name="payment-method" value="google-pay" id="google-pay-option" required>
                 <img src="assets/img/google-pay.png" alt="Google Pay" style="height:24px; vertical-align: middle;">
@@ -145,6 +173,18 @@ if (isset($_POST['grandTotal'])) {
                 <img src="assets/img/paypal.png" alt="PayPal" style="height:24px; vertical-align: middle;">
                 PayPal
             </label>
+            <label>
+                <input type="radio" name="payment-method" value="square" id="square-option" required>
+                <img src="assets/img/square.png" alt="Square" style="height:24px; vertical-align: middle;">
+                Square
+            </label>
+        </div>
+
+        <!-- Container for Square Payment Form -->
+        <div id="square-payment-form-container">
+            <div id="card-container"></div>
+            <button id="sq-creditcard" class="button-credit-card">Pay with Card</button>
+            <div id="payment-status-container"></div>
         </div>
 
         <!-- Container for Google Pay button -->
@@ -154,56 +194,42 @@ if (isset($_POST['grandTotal'])) {
     </form>
 </div>
 
-<!-- Include the Google Pay API JavaScript library -->
-<script async
-    src="https://pay.google.com/gp/p/js/pay.js"
-    onload="onGooglePayLoaded()">
-</script>
+<!-- Combined JavaScript Code -->
+<script type="text/javascript">
+    // Declare paymentsClient globally
+    let paymentsClient = null;
 
-<!-- JavaScript Code -->
-<script>
-    // Payment method selection handling
-    const googlePayOption = document.getElementById('google-pay-option');
-    const paypalOption = document.getElementById('paypal-option');
-    const proceedButton = document.getElementById('proceed-button');
-    const googlePayButtonContainer = document.getElementById('google-pay-button-container');
-    const billingForm = document.getElementById('billing-form');
+    // Ensure that onGooglePayLoaded() is defined in the global scope
+    window.onGooglePayLoaded = function() {
+        const paymentsClient = getGooglePaymentsClient();
+        paymentsClient.isReadyToPay(getGoogleIsReadyToPayRequest())
+            .then(function(response) {
+                if (response.result) {
+                    addGooglePayButton();
+                } else {
+                    console.log('Google Pay not available');
+                }
+            })
+            .catch(function(err) {
+                console.error('Error determining readiness to use Google Pay:', err);
+            });
+    };
 
-    function handlePaymentMethodChange() {
-        if (googlePayOption.checked) {
-            proceedButton.style.display = 'none';
-            googlePayButtonContainer.style.display = 'block';
-            billingForm.setAttribute('action', ''); // No action needed
-            billingForm.setAttribute('method', 'post');
-        } else if (paypalOption.checked) {
-            proceedButton.style.display = 'block';
-            googlePayButtonContainer.style.display = 'none';
-            billingForm.setAttribute('action', '<?php echo PAYPAL_URL; ?>');
-            billingForm.setAttribute('method', 'post');
-        } else {
-            proceedButton.style.display = 'block';
-            googlePayButtonContainer.style.display = 'none';
-            billingForm.setAttribute('action', 'confirmation.html');
-            billingForm.setAttribute('method', 'post');
+    /**
+     * Initialize the Google Pay API client
+     */
+    function getGooglePaymentsClient() {
+        if (paymentsClient === null) {
+            paymentsClient = new google.payments.api.PaymentsClient({
+                environment: 'TEST',
+                paymentDataCallbacks: {
+                    onPaymentAuthorized: onPaymentAuthorized
+                }
+            });
         }
+        return paymentsClient;
     }
 
-    // Attach event listeners to payment method radio buttons
-    const paymentMethodInputs = document.querySelectorAll('input[name="payment-method"]');
-    paymentMethodInputs.forEach(function(input) {
-        input.addEventListener('change', handlePaymentMethodChange);
-    });
-
-    // Initialize the payment method display based on the default selection
-    document.addEventListener('DOMContentLoaded', function() {
-        handlePaymentMethodChange();
-    });
-
-    // Google Pay integration code
-    /**
-     * Your Google Pay API integration code goes here
-     * (We'll integrate the code you provided next)
-     */
     /**
      * Define the version of the Google Pay API referenced when creating your
      * configuration
@@ -250,23 +276,6 @@ if (isset($_POST['grandTotal'])) {
     );
 
     /**
-     * Initialize the Google Pay API client
-     */
-    let paymentsClient = null;
-
-    function getGooglePaymentsClient() {
-      if ( paymentsClient === null ) {
-        paymentsClient = new google.payments.api.PaymentsClient({
-          environment: 'TEST',
-          paymentDataCallbacks: {
-            onPaymentAuthorized: onPaymentAuthorized
-          }
-        });
-      }
-      return paymentsClient;
-    }
-
-    /**
      * Determine readiness to pay with the Google Pay API
      */
     function getGoogleIsReadyToPayRequest() {
@@ -277,19 +286,6 @@ if (isset($_POST['grandTotal'])) {
           allowedPaymentMethods: [baseCardPaymentMethod]
         }
       );
-    }
-
-    function onGooglePayLoaded() {
-      const paymentsClient = getGooglePaymentsClient();
-      paymentsClient.isReadyToPay(getGoogleIsReadyToPayRequest())
-          .then(function(response) {
-            if (response.result) {
-              addGooglePayButton();
-            }
-          })
-          .catch(function(err) {
-            console.error(err);
-          });
     }
 
     /**
@@ -323,7 +319,7 @@ if (isset($_POST['grandTotal'])) {
      * Provide Google Pay API with a payment amount, currency, and amount status
      */
     function getGoogleTransactionInfo() {
-      // Retrieve the total price from session storage
+      // Retrieve the total price from PHP variable
       let totalPrice = '<?php echo $grandTotal; ?>';
       if (!totalPrice) {
           totalPrice = '0.00';
@@ -350,7 +346,7 @@ if (isset($_POST['grandTotal'])) {
       paymentsClient.loadPaymentData(paymentDataRequest)
           .then(function(paymentData) {
             // handle the response
-            processPayment(paymentData);
+            processGooglePayPayment(paymentData);
           })
           .catch(function(err) {
             console.error(err);
@@ -363,7 +359,7 @@ if (isset($_POST['grandTotal'])) {
     function onPaymentAuthorized(paymentData) {
       return new Promise(function(resolve, reject){
         // handle the response
-        processPayment(paymentData)
+        processGooglePayPayment(paymentData)
         .then(function() {
           resolve({transactionState: 'SUCCESS'});
         })
@@ -383,7 +379,7 @@ if (isset($_POST['grandTotal'])) {
     /**
      * Process payment data returned by the Google Pay API
      */
-    function processPayment(paymentData) {
+    function processGooglePayPayment(paymentData) {
       return new Promise(function(resolve, reject) {
         setTimeout(function() {
           // For testing purposes, we'll consider the payment successful
@@ -396,6 +392,128 @@ if (isset($_POST['grandTotal'])) {
         }, 1000);
       });
     }
+
+    // Wait for the DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+
+        // Payment method selection handling
+        const googlePayOption = document.getElementById('google-pay-option');
+        const paypalOption = document.getElementById('paypal-option');
+        const squareOption = document.getElementById('square-option');
+        const proceedButton = document.getElementById('proceed-button');
+        const googlePayButtonContainer = document.getElementById('google-pay-button-container');
+        const squarePaymentFormContainer = document.getElementById('square-payment-form-container');
+        const billingForm = document.getElementById('billing-form');
+        const paymentMethodInputs = document.querySelectorAll('input[name="payment-method"]');
+
+        function handlePaymentMethodChange() {
+            if (googlePayOption.checked) {
+                proceedButton.style.display = 'none';
+                googlePayButtonContainer.style.display = 'block';
+                squarePaymentFormContainer.style.display = 'none';
+                billingForm.setAttribute('action', '');
+                billingForm.setAttribute('method', 'post');
+            } else if (paypalOption.checked) {
+                proceedButton.style.display = 'block';
+                googlePayButtonContainer.style.display = 'none';
+                squarePaymentFormContainer.style.display = 'none';
+                billingForm.setAttribute('action', '<?php echo PAYPAL_URL; ?>');
+                billingForm.setAttribute('method', 'post');
+            } else if (squareOption.checked) {
+                proceedButton.style.display = 'none';
+                googlePayButtonContainer.style.display = 'none';
+                squarePaymentFormContainer.style.display = 'block';
+                billingForm.setAttribute('action', '');
+                billingForm.setAttribute('method', 'post');
+            } else {
+                proceedButton.style.display = 'block';
+                googlePayButtonContainer.style.display = 'none';
+                squarePaymentFormContainer.style.display = 'none';
+                billingForm.setAttribute('action', 'confirmation.html');
+                billingForm.setAttribute('method', 'post');
+            }
+        }
+
+        paymentMethodInputs.forEach(function(input) {
+            input.addEventListener('change', handlePaymentMethodChange);
+        });
+
+        handlePaymentMethodChange();
+
+        // Prevent form submission when Square or Google Pay is selected
+        billingForm.addEventListener('submit', function(event) {
+            if (squareOption.checked || googlePayOption.checked) {
+                event.preventDefault();
+                // Do nothing as payment is handled via JavaScript
+            }
+        });
+
+        // Initialize Square Payments
+        initializeSquarePayments();
+    });
+
+    // Square Web Payments SDK Implementation
+    let payments;
+
+    async function initializeSquarePayments() {
+        if (!window.Square) {
+            throw new Error('Square.js failed to load properly.');
+        }
+
+        payments = window.Square.payments('sandbox-sq0idb-N4SKDRdi75Lt-ZljmB56oQ', 'LR0FTXEP3BWQF');
+
+        const card = await payments.card();
+        await card.attach('#card-container');
+
+        document.querySelector('#sq-creditcard').addEventListener('click', async function(event) {
+            event.preventDefault();
+            const statusContainer = document.getElementById('payment-status-container');
+            try {
+                const result = await card.tokenize();
+                if (result.status === 'OK') {
+                    processPayment(result.token);
+                } else {
+                    throw new Error('Card tokenization failed');
+                }
+            } catch (e) {
+                statusContainer.innerText = e.message;
+            }
+        });
+    }
+
+    function processPayment(token) {
+        // Send the token to your server for processing
+        fetch('process_payment.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                token: token,
+                amount: '<?php echo intval($grandTotal * 100); ?>' // Amount in cents
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Payment Successful!');
+                window.location.href = 'confirmation.html';
+            } else {
+                alert('Payment Failed: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred during payment processing.');
+        });
+    }
+
+</script>
+
+<!-- Include the Google Pay API JavaScript library AFTER your custom JavaScript code -->
+<script async
+    src="https://pay.google.com/gp/p/js/pay.js"
+    onload="onGooglePayLoaded()">
 </script>
 
 </body>
