@@ -84,7 +84,7 @@ if (isset($_POST['grandTotal'])) {
         .billing-container button:hover {
             background-color: #333;
         }
-        /* Container for Google Pay button */
+        Container for Google Pay button
         #google-pay-button-container {
             display: none;
             margin-top: 20px;
@@ -133,6 +133,9 @@ if (isset($_POST['grandTotal'])) {
         <input type="hidden" name="return" value="<?php echo PAYPAL_RETURN_URL; ?>" id="paypal-return">
         <input type="hidden" name="cancel_return" value="<?php echo PAYPAL_CANCEL_URL; ?>" id="paypal-cancel-return">
         <input type="hidden" name="notify_url" value="<?php echo PAYPAL_NOTIFY_URL; ?>" id="paypal-notify-url">
+        <input type="hidden" id="amount" value="<?php echo intval($grandTotal * 100); ?>">
+        
+
 
         <!-- Buyer Details -->
         <label for="first-name">First Name *</label>
@@ -340,59 +343,75 @@ if (isset($_POST['grandTotal'])) {
      * Show Google Pay payment sheet when Google Pay payment button is clicked
      */
     function onGooglePaymentButtonClicked() {
-      const paymentDataRequest = getGooglePaymentDataRequest();
+        const paymentDataRequest = getGooglePaymentDataRequest();
 
-      const paymentsClient = getGooglePaymentsClient();
-      paymentsClient.loadPaymentData(paymentDataRequest)
-          .then(function(paymentData) {
-            // handle the response
-            processGooglePayPayment(paymentData);
-          })
-          .catch(function(err) {
-            console.error(err);
-          });
-    }
+        const paymentsClient = getGooglePaymentsClient();
+        paymentsClient.loadPaymentData(paymentDataRequest)
+            .then(function(paymentData) {
+                // The paymentData contains the payment info
+                // The onPaymentAuthorized callback has already processed the payment
+                // Now we can safely redirect
+                window.location.href = 'confirmation.php';
+            })
+            .catch(function(err) {
+                console.error(err);
+            });
+        }
 
     /**
      * Handles authorize payments callback intents
      */
     function onPaymentAuthorized(paymentData) {
-      return new Promise(function(resolve, reject){
-        // handle the response
+    return new Promise(function(resolve, reject){
         processGooglePayPayment(paymentData)
         .then(function() {
-          resolve({transactionState: 'SUCCESS'});
+        resolve({transactionState: 'SUCCESS'});
         })
         .catch(function() {
-          resolve({
+        resolve({
             transactionState: 'ERROR',
             error: {
-              intent: 'PAYMENT_AUTHORIZATION',
-              message: 'Insufficient funds',
-              reason: 'PAYMENT_DATA_INVALID'
+            intent: 'PAYMENT_AUTHORIZATION',
+            message: 'Payment failed',
+            reason: 'PAYMENT_DATA_INVALID'
             }
-          });
         });
-      });
+        });
+    });
     }
 
     /**
      * Process payment data returned by the Google Pay API
      */
     function processGooglePayPayment(paymentData) {
-      return new Promise(function(resolve, reject) {
-        setTimeout(function() {
-          // For testing purposes, we'll consider the payment successful
-          // In a real implementation, you'd send the payment data to your server to process the payment
-          console.log('Payment successful', paymentData);
-          alert('Payment successful!');
-          // Redirect to confirmation page or perform other actions
-          window.location.href = 'confirmation.html';
-          resolve({});
-        }, 1000);
-      });
-    }
+    return new Promise(function(resolve, reject) {
+        // Include the amount in the data sent to the server
+        paymentData.amount = '<?php echo $grandTotal; ?>'; // Embed PHP variable into JavaScript
 
+        // Send the payment data to the server via AJAX
+        fetch('process_google_pay_payment.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(paymentData)
+        })
+        .then(response => response.json())
+        .then(data => {
+        if (data.success) {
+            console.log('Payment processed successfully on the server');
+            resolve({});
+        } else {
+            console.error('Server processing failed:', data.error);
+            reject();
+        }
+        })
+        .catch(error => {
+        console.error('Error processing payment:', error);
+        reject();
+        });
+    });
+    }
     // Wait for the DOM to be fully loaded
     document.addEventListener('DOMContentLoaded', function() {
 
@@ -482,31 +501,34 @@ if (isset($_POST['grandTotal'])) {
     }
 
     function processPayment(token) {
-        // Send the token to your server for processing
-        fetch('process_payment.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                token: token,
-                amount: '<?php echo intval($grandTotal * 100); ?>' // Amount in cents
-            })
+    const amountElement = document.getElementById('amount');
+    const amount = parseInt(amountElement.value);
+    console.log('Amount to be charged:', amount);
+    // Send the token and amount to your server for processing
+    fetch('process_payment.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            token: token,
+            amount: amount
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Payment Successful!');
-                window.location.href = 'confirmation.html';
-            } else {
-                alert('Payment Failed: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred during payment processing.');
-        });
-    }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Payment Successful!');
+            window.location.href = 'confirmation.php';
+        } else {
+            alert('Payment Failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred during payment processing.');
+    });
+}
 
 </script>
 

@@ -8,7 +8,7 @@ define('PAYPAL_ID', 'kingsinghking101@gmail.com');
 define('PAYPAL_SANDBOX', TRUE); // TRUE for sandbox testing, FALSE for live transactions
 
 // PayPal return URLs
-define('PAYPAL_RETURN_URL', 'http://localhost/E-commerce-application/index.html');
+define('PAYPAL_RETURN_URL', 'http://localhost/E-commerce-application/sucess.php');
 define('PAYPAL_CANCEL_URL', 'http://localhost/E-commerce-application/cancel.php');
 define('PAYPAL_NOTIFY_URL', 'http://localhost/E-commerce-application/ipn.php');
 

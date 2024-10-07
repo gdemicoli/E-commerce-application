@@ -17,6 +17,7 @@ class ComposerStaticInitdd5dbbf9de82a63d1c80d0ffa28a72a3
         ),
         'S' => 
         array (
+            'Stripe\\' => 7,
             'Square\\' => 7,
         ),
         'P' => 
@@ -38,6 +39,10 @@ class ComposerStaticInitdd5dbbf9de82a63d1c80d0ffa28a72a3
         'Unirest\\' => 
         array (
             0 => __DIR__ . '/..' . '/apimatic/unirest-php/src',
+        ),
+        'Stripe\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/stripe/stripe-php/lib',
         ),
         'Square\\' => 
         array (

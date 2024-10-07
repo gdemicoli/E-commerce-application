@@ -1,5 +1,6 @@
 {
     "require": {
-        "square/square": "^38.1"
+        "square/square": "^38.1",
+        "stripe/stripe-php": "^16.1"
     }
 }
