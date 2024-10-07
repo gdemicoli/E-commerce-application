@@ -1,5 +1,4 @@
 <?php
-// Start the session at the top of the file
 session_start();
 ?>
 <!DOCTYPE html>
@@ -101,14 +100,11 @@ session_start();
         <div class="total">$1,499.00</div>
     </div>
 
-    <!-- Add a form to submit the grand total -->
     <form id="checkout-form" action="billing.php" method="post">
-        <!-- Hidden input to store the grand total -->
         <input type="hidden" name="grandTotal" id="grandTotalInput" value="">
 
         <button type="button" class="update-btn" id="update-btn">UPDATE QTY</button>
         <button type="button" class="remove-btn" id="remove-btn">REMOVE</button>
-        <!-- Change the button type to "submit" -->
         <button type="submit" class="checkout-btn" id="checkout-btn">CHECKOUT NOW</button>
     </form>
 
@@ -129,7 +125,7 @@ session_start();
         let finalTotalValue = 0;
 
         cartItems.forEach(function(item) {
-            // Quantity input
+            // Quantity 
             let qtyInput = item.querySelector('.qty input');
             let quantity = parseInt(qtyInput.value);
 
@@ -180,7 +176,6 @@ session_start();
                 item.parentNode.removeChild(item);
             }
         });
-        // Update the grand total
         updateTotals();
     });
 </script>

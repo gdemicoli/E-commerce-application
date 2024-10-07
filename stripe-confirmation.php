@@ -1,32 +1,26 @@
 <?php
-// Include configuration file and Stripe PHP library
 require_once 'config.php';
 require_once 'vendor/autoload.php';
 
 \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
 
-// Get the payment intent ID from the session
 session_start();
 $payment_intent_id = $_SESSION['payment_intent_id'] ?? null;
 
 if ($payment_intent_id) {
     try {
-        // Retrieve the payment intent
         $payment_intent = \Stripe\PaymentIntent::retrieve($payment_intent_id);
 
-        // Get payment details
-        $amount = $payment_intent->amount / 100; // Convert from cents to dollars
+        // recieve transaction details
+        $amount = $payment_intent->amount / 100; 
         $currency = strtoupper($payment_intent->currency);
         $payment_status = $payment_intent->status;
         $txn_id = $payment_intent->id;
 
-        // You might want to get item details from your database based on the payment intent
-        $item_name = "Your Product"; // Replace with actual item name
+        $item_name = "Your Product"; 
 
-        // Clear the payment intent ID from the session
         unset($_SESSION['payment_intent_id']);
     } catch (\Stripe\Exception\ApiErrorException $e) {
-        // Handle any errors
         $error = $e->getMessage();
     }
 } else {

@@ -1,15 +1,10 @@
 <?php
-// Start the session
 session_start();
 
-// Check if payment details are set in the session
 if (isset($_SESSION['payment_details'])) {
     $paymentDetails = $_SESSION['payment_details'];
 
-    // Optionally, unset the session variable if you don't need it anymore
-    // unset($_SESSION['payment_details']);
 } else {
-    // Redirect to billing page or show an error
     header('Location: billing.php');
     exit;
 }

@@ -1,24 +1,20 @@
 <?php
 session_start();
 //process_payment.php
-// Enable error reporting
 ini_set('display_errors', 0);
 error_reporting(0);
 
-// Set the content type to JSON
 header('Content-Type: application/json');
 
-// Get the JSON input
 $data = json_decode(file_get_contents('php://input'), true);
 
-// Check if data is received
 if (!$data) {
     echo json_encode(['success' => false, 'error' => 'No data received']);
     exit;
 }
 
 
-// Include the Square SDK
+// include the Square SDK
 require 'vendor/autoload.php';
 
 use Square\SquareClient;
@@ -26,23 +22,20 @@ use Square\Environment;
 use Square\Models\CreatePaymentRequest;
 use Square\Models\Money;
 
-// Set your Square credentials
 $accessToken = 'EAAAl2xdhJqXHHCAmScspahGku0SHunRiqnyp0WNXHjPHTUOPtJL1p7MCgQR4E99';
 
-// Create a Square client
+// create a square client
 $client = new SquareClient([
     'accessToken' => $accessToken,
     'environment' => Environment::SANDBOX,
 ]);
 
-// Set the content type to JSON
 header('Content-Type: application/json');
 
-// For testing purposes, set a fixed amount and token
 $token = 'cnon:card-nonce-ok'; // Square's test nonce
-$amount = intval($data['amount']);// $1.00 in cents
+$amount = intval($data['amount']);
 
-// Create a unique ID for the transaction
+// create a unique ID for the transaction
 $transactionId = uniqid();
 
 $money = new Money();
@@ -63,11 +56,11 @@ try {
 
     if ($response->isSuccess()) {
         $payment = $response->getResult()->getPayment();
-        // Store payment details in session
+        // store payment details in session for confrimation page
         $_SESSION['payment_details'] = [
             'transaction_id' => $payment->getId(),
             'payment_status' => $payment->getStatus(),
-            'amount' => $payment->getAmountMoney()->getAmount() / 100, // Convert cents to dollars
+            'amount' => $payment->getAmountMoney()->getAmount() / 100, 
             'currency' => $payment->getAmountMoney()->getCurrency(),
             'created_at' => $payment->getCreatedAt(),
         ];

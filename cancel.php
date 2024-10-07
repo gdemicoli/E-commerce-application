@@ -6,7 +6,7 @@
 </head>
 <body>
     <h1>Payment Canceled</h1>
-    <p>Your payment was canceled. Please try again or contact support.</p>
+    <p>Your payment was canceled. Please try again.</p>
     <a href="cart.php">Return to Cart</a>
 </body>
 </html>

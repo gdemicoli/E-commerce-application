@@ -1,8 +1,7 @@
 <?php
-// Include configuration file
 include 'config.php';
 
-// Get transaction information from PayPal
+// Get transaction information from paypal
 if (!empty($_GET['tx'])) {
     $txn_id = $_GET['tx'];
     $payment_status = $_GET['st'];
@@ -11,7 +10,7 @@ if (!empty($_GET['tx'])) {
     $item_number = $_GET['item_number'];
     $item_name = $_GET['item_name'];
 
-    // Process the transaction details (e.g., store in database, send email)
+   
 }
 ?>
 <!DOCTYPE html>
